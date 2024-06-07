@@ -41,9 +41,9 @@ def find_upstream_setup():
             res = val['install_tree']
             if res.endswith("/opt/spack"):
                 res = res[:-10]
-            if os.path.exists(res + "/setup-env.sh")
+            if os.path.exists(res + "/setup-env.sh"):
                 return res + "/setup-env.sh"
-            if os.path.exists(res + "/share/spack/setup-env.sh")
+            if os.path.exists(res + "/share/spack/setup-env.sh"):
                 return res +  "/share/spack/setup-env.sh"
 
 def local_buildcache(args):
@@ -57,7 +57,7 @@ def local_buildcache(args):
     active = ev.active_environment().name
     upstream_setup = find_upstream_setup()
  
-    for hs in get_local:hashes():
+    for hs in get_local_hashes():
         os.system(f"spack buildcache creaete {ka} --only packages {path}/bc {hs}")
     os.system(f"spack buildcache update-index {path}/bc")
     make_reconstitute_script(path, active, upstream_setup)

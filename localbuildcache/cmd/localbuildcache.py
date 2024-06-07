@@ -11,5 +11,5 @@ def setup_parser(subparser):
     )
 
     
-def installdir(parser, args):
+def localbuildcache(parser, args):
     lext.local_buildcache(args)
