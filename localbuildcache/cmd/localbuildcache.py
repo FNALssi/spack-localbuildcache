@@ -3,7 +3,7 @@ import spack.config
 from spack.extensions import localbuildcache as lext
 
 description = "create buildcache of local packages in environment"
-section = "basic"
+section = "environments"
 level = "short"
 
 def setup_parser(subparser):
