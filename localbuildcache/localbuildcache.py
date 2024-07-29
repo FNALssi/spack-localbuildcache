@@ -7,6 +7,7 @@ import spack.cmd
 import spack.cmd.common.arguments as arguments
 import spack.environment as ev
 import spack.spec
+import spack.binary_distribution as bindist
 
 
 def get_local_hashes():
@@ -57,7 +58,39 @@ def local_buildcache(args):
     active = ev.active_environment().name
     upstream_setup = find_upstream_setup()
  
+    url = "{path}/bc"
+
     for hs in get_local_hashes():
-        os.system(f"spack buildcache creaete {ka} --only packages {path}/bc {hs}")
+        spec = spack.cmd.disambiguate_spec_from_hashes(f"/{hs}", spec, local=True, installed=True, first=True)
+
+        try:
+            bindist.push_or_raise(
+                spec,
+                url,
+                bindist.PushOptions(
+                    force=args.force,
+                    unsigned=args.unsigned,
+                    key=args.key,
+                    regenerate_index=None,
+                ),
+            )
+
+            msg = f"{_progress(i, len(specs))}Pushed {_format_spec(spec)}"
+            if len(specs) == 1:
+                msg += f" to {url}"
+            tty.info(msg)
+
+        except bindist.NoOverwriteException:
+            skipped.append(_format_spec(spec))
+
+        # Catch any other exception unless the fail fast option is set
+        except Exception as e:
+            if args.fail_fast or isinstance(
+                e, (bindist.PickKeyException, bindist.NoKeyException)
+            ):
+                raise
+            failed.append((_format_spec(spec), e))
+
+>>>>>>> Stashed changes
     os.system(f"spack buildcache update-index {path}/bc")
     make_reconstitute_script(path, active, upstream_setup)

@@ -1,6 +1,6 @@
 import sys
 import spack.config
-from spack.extensions import localbuildcache as lext
+from spack.extensions import localbuildcache as locext
 
 description = "create buildcache of local packages in environment"
 section = "environments"
@@ -15,4 +15,4 @@ def setup_parser(subparser):
 
     
 def localbuildcache(parser, args):
-    lext.local_buildcache(args)
+    locext.local_buildcache(args)
