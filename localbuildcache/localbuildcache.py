@@ -16,16 +16,16 @@ def get_env_hashes(local=True):
     res = set()
     with os.popen("spack spec --install-status --long") as ssis:
         for line in ssis:
-            if line.startswith('[+]') or not local and line.startswith('[^]'):
+            if line.startswith("[+]") or not local and line.startswith("[^]"):
                 hval = line[5:13].strip()
                 res.add(hval)
     return res
 
+
 def make_reconstitute_script(path, active, upstream_setup):
     with open(f"{path}/bc/reconstitute.bash", "w") as fout:
         fout.write(
-
-f"""#!/bin/bash
+            f"""#!/bin/bash
 
 . {upstream_setup}
 
@@ -34,20 +34,22 @@ spack subspack $PWD/packages
 spack mirror add job_local file://$INPUT_TAR_DIR_LOCAL
 spack env create {active} $INPUT_TAR_DIR_LOCAL/spack.lock
 spack --env {active} install
-""" )
+"""
+        )
 
 
 def find_upstream_setup():
-    upstreams = spack.config.get('upstreams')
+    upstreams = spack.config.get("upstreams")
     for uname, val in upstreams:
-        if 'install_tree' in val:
-            res = val['install_tree']
+        if "install_tree" in val:
+            res = val["install_tree"]
             if res.endswith("/opt/spack"):
                 res = res[:-10]
             if os.path.exists(res + "/setup-env.sh"):
                 return res + "/setup-env.sh"
             if os.path.exists(res + "/share/spack/setup-env.sh"):
-                return res +  "/share/spack/setup-env.sh"
+                return res + "/share/spack/setup-env.sh"
+
 
 def local_buildcache(args):
     if args.key:
@@ -59,7 +61,7 @@ def local_buildcache(args):
     path = ev.active_environment().path
     active = ev.active_environment().name
     upstream_setup = find_upstream_setup()
- 
+
     url = f"file://{path}/bc"
 
     skipped = []
@@ -78,8 +80,8 @@ def local_buildcache(args):
 
         bdf = f"{str(spec.prefix)}/.spack/binary_distribution"
         if args.no_duplicates and os.path.exists(bdf):
-             # was installed from a buildcache, skip it
-             continue
+            # was installed from a buildcache, skip it
+            continue
 
         try:
             bindist.push_or_raise(
