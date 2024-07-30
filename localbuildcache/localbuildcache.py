@@ -15,11 +15,11 @@ from spack.cmd.buildcache import _format_spec
 def get_env_hashes(local=True):
     res = set()
 
-    #with os.popen("spack spec --install-status --long") as ssis:
+    # with os.popen("spack spec --install-status --long") as ssis:
     #    for line in ssis:
 
     tree_context = spack.store.STORE.db.read_transaction
-    tree_kwargs = { 
+    tree_kwargs = {
         "format": spack.spec.DISPLAY_FORMAT,
         "hashlen": 7,
         "status_fn": spack.spec.Spec.install_status,
@@ -34,8 +34,6 @@ def get_env_hashes(local=True):
     for input, output in specs:
         with tree_context():
             spec_out = output.tree(**tree_kwargs)
-
-        print(f"get_env_hashes: res:\n{res}")
 
         for line in spec_out.split("\n"):
             if line.startswith("[+]") or not local and line.startswith("[^]"):
