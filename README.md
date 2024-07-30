@@ -15,6 +15,9 @@ In most cases you can just do:
 but there are a few option flags that are often useful
   
 * --key name specifies the signing key name; this assumes the signing key has been configured in the spack gnupg area.
+* --local specifies that only packages local to this spack instance (i.e. not in an upstream instance) be included
+* --not-bc specifies that only packages not installed from a buildcache be included
+* --dest url  specifies a destination url for the buildcache, default is file://dir/bc for the current environments environment dir.
 
 ### Installation
 
