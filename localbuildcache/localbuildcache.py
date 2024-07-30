@@ -14,11 +14,34 @@ from spack.cmd.buildcache import _format_spec
 
 def get_env_hashes(local=True):
     res = set()
-    with os.popen("spack spec --install-status --long") as ssis:
-        for line in ssis:
+
+    #with os.popen("spack spec --install-status --long") as ssis:
+    #    for line in ssis:
+
+    tree_context = spack.store.STORE.db.read_transaction
+    tree_kwargs = { 
+        "format": spack.spec.DISPLAY_FORMAT,
+        "hashlen": 7,
+        "status_fn": spack.spec.Spec.install_status,
+        "hashes": True,
+        "color": False,
+    }
+    env = ev.active_environment()
+    if env:
+        env.concretize()
+        specs = env.concretized_specs()
+
+    for input, output in specs:
+        with tree_context():
+            spec_out = output.tree(**tree_kwargs)
+
+        print(f"get_env_hashes: res:\n{res}")
+
+        for line in spec_out.split("\n"):
             if line.startswith("[+]") or not local and line.startswith("[^]"):
                 hval = line[5:13].strip()
                 res.add(hval)
+
     return res
 
 
@@ -79,7 +102,7 @@ def local_buildcache(args):
         spec = specs[0]
 
         bdf = f"{str(spec.prefix)}/.spack/binary_distribution"
-        if args.no_duplicates and os.path.exists(bdf):
+        if args.not_bc and os.path.exists(bdf):
             # was installed from a buildcache, skip it
             continue
 

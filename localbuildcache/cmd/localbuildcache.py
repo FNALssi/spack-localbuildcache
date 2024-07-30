@@ -16,7 +16,7 @@ def setup_parser(subparser):
         help="Restrict to packages local to this instance (not upstream)",
     )
     subparser.add_argument(
-        "--no-duplicates",
+        "--not-bc",
         default=False,
         action="store_true",
         help="Restrict to packages not installed from a buildcache",
