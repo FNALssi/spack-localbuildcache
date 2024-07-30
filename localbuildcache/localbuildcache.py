@@ -2,25 +2,27 @@ import llnl.util.lang as lang
 import llnl.util.tty as tty
 
 import os
+import re
 import spack
 import spack.cmd
 import spack.cmd.common.arguments as arguments
 import spack.environment as ev
 import spack.spec
 import spack.binary_distribution as bindist
+from spack.cmd.buildcache import _format_spec
 
 
-def get_local_hashes():
+def get_env_hashes(local=True):
     res = set()
     with os.popen("spack spec --install-status --long") as ssis:
         for line in ssis:
-            if line.startswith('[+]'):
+            if line.startswith('[+]') or not local and line.startswith('[^]'):
                 hval = line[5:13].strip()
                 res.add(hval)
     return res
 
 def make_reconstitute_script(path, active, upstream_setup):
-    with os.open(f"{path}/bc/reconstitute.bash", "w") as fout:
+    with open(f"{path}/bc/reconstitute.bash", "w") as fout:
         fout.write(
 
 f"""#!/bin/bash
@@ -58,30 +60,40 @@ def local_buildcache(args):
     active = ev.active_environment().name
     upstream_setup = find_upstream_setup()
  
-    url = "{path}/bc"
+    url = f"file://{path}/bc"
 
-    for hs in get_local_hashes():
-        spec = spack.cmd.disambiguate_spec_from_hashes(f"/{hs}", spec, local=True, installed=True, first=True)
+
+    for hs in get_env_hashes(args.local):
+        if not hs:
+            continue
+        specs = spack.cmd.parse_specs([f"/{hs}"], concretize=True)
+
+        bdf = f"{str(specs[0].prefix)}/.spack/binary_distribution"
+        if args.no_duplicates and os.path.exists(bdf):
+             # was installed from a buildcache, skip it
+             continue
+
+        skipped = []
 
         try:
             bindist.push_or_raise(
-                spec,
+                specs[0],
                 url,
                 bindist.PushOptions(
-                    force=args.force,
-                    unsigned=args.unsigned,
+                    force=False,
+                    unsigned=not args.key,
                     key=args.key,
                     regenerate_index=None,
                 ),
             )
 
-            msg = f"{_progress(i, len(specs))}Pushed {_format_spec(spec)}"
+            msg = f"Pushed {_format_spec(specs[0])}"
             if len(specs) == 1:
                 msg += f" to {url}"
             tty.info(msg)
 
         except bindist.NoOverwriteException:
-            skipped.append(_format_spec(spec))
+            skipped.append(_format_spec(specs[0]))
 
         # Catch any other exception unless the fail fast option is set
         except Exception as e:
@@ -91,6 +103,5 @@ def local_buildcache(args):
                 raise
             failed.append((_format_spec(spec), e))
 
->>>>>>> Stashed changes
     os.system(f"spack buildcache update-index {path}/bc")
     make_reconstitute_script(path, active, upstream_setup)
