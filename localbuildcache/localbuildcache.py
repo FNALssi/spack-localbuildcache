@@ -62,22 +62,28 @@ def local_buildcache(args):
  
     url = f"file://{path}/bc"
 
+    skipped = []
+    failed = []
 
     for hs in get_env_hashes(args.local):
         if not hs:
             continue
         specs = spack.cmd.parse_specs([f"/{hs}"], concretize=True)
 
-        bdf = f"{str(specs[0].prefix)}/.spack/binary_distribution"
+        if not specs:
+            skipped.append(f"/{hs}")
+            continue
+
+        spec = specs[0]
+
+        bdf = f"{str(spec.prefix)}/.spack/binary_distribution"
         if args.no_duplicates and os.path.exists(bdf):
              # was installed from a buildcache, skip it
              continue
 
-        skipped = []
-
         try:
             bindist.push_or_raise(
-                specs[0],
+                spec,
                 url,
                 bindist.PushOptions(
                     force=False,
@@ -87,13 +93,11 @@ def local_buildcache(args):
                 ),
             )
 
-            msg = f"Pushed {_format_spec(specs[0])}"
-            if len(specs) == 1:
-                msg += f" to {url}"
+            msg = f"Pushed {_format_spec(spec)} to {url}"
             tty.info(msg)
 
         except bindist.NoOverwriteException:
-            skipped.append(_format_spec(specs[0]))
+            skipped.append(_format_spec(spec))
 
         # Catch any other exception unless the fail fast option is set
         except Exception as e:
