@@ -43,7 +43,7 @@ def get_env_hashes(env, local=True):
 
 
 def make_reconstitute_script(path, active, upstream_setup):
-    with open(f"{path}/bc/reconstitute.bash", "w") as fout:
+    with open(f"{path}/reconstitute.bash", "w") as fout:
         fout.write(
             f"""#!/bin/bash
 
@@ -79,7 +79,14 @@ def local_buildcache(args):
     active = env.name
     upstream_setup = find_upstream_setup()
 
-    url = f"file://{path}/bc"
+    if args.dest:
+        if args.dest.startswith("/"):
+            url = "file://" + args.dest
+        else:
+            url = args.dest
+    else:
+        url = f"file://{path}/bc"
+    dest = url.replace("file://", "")
 
     skipped = []
     failed = []
@@ -126,5 +133,5 @@ def local_buildcache(args):
                 raise
             failed.append((_format_spec(spec), e))
 
-    os.system(f"spack buildcache update-index {path}/bc")
-    make_reconstitute_script(path, active, upstream_setup)
+    os.system(f"spack buildcache update-index {url}")
+    make_reconstitute_script(dest, active, upstream_setup)

@@ -21,6 +21,11 @@ def setup_parser(subparser):
         action="store_true",
         help="Restrict to packages not installed from a buildcache",
     )
+    subparser.add_argument(
+        "--dest",
+        default="",
+        help="destination url -- default is file:///environment_dir/bc",
+    )
 
 
 def localbuildcache(parser, args):
