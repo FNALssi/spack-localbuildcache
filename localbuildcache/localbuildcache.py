@@ -12,7 +12,7 @@ import spack.binary_distribution as bindist
 from spack.cmd.buildcache import _format_spec
 
 
-def get_env_hashes(local=True):
+def get_env_hashes(env, local=True):
     res = set()
 
     # with os.popen("spack spec --install-status --long") as ssis:
@@ -26,7 +26,6 @@ def get_env_hashes(local=True):
         "hashes": True,
         "color": False,
     }
-    env = ev.active_environment()
     if env:
         env.concretize()
         specs = env.concretized_specs()
@@ -73,14 +72,11 @@ def find_upstream_setup():
 
 
 def local_buildcache(args):
-    if args.key:
-        ka = f"--key {args.key}"
-    else:
-        ka = "--unsigned"
 
     spack.cmd.require_active_env("location -e")
-    path = ev.active_environment().path
-    active = ev.active_environment().name
+    env = ev.active_environment()
+    path = env.path
+    active = env.name
     upstream_setup = find_upstream_setup()
 
     url = f"file://{path}/bc"
@@ -88,7 +84,7 @@ def local_buildcache(args):
     skipped = []
     failed = []
 
-    for hs in get_env_hashes(args.local):
+    for hs in get_env_hashes(env, args.local):
         if not hs:
             continue
         specs = spack.cmd.parse_specs([f"/{hs}"], concretize=True)
