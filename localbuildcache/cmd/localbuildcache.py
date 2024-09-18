@@ -1,6 +1,8 @@
 import sys
 import spack.config
+import argparse
 from spack.extensions import localbuildcache as locext
+from spack.cmd.buildcache import setup_parser as orig_buildcache_setup_parser
 
 description = "create buildcache of local packages in environment"
 section = "environments"
@@ -8,7 +10,9 @@ level = "short"
 
 
 def setup_parser(subparser):
-    subparser.add_argument("--key", default=None, help="signing key for packges")
+    origp = argparse.ArgumentParser()
+    orig_buildcache_setup_parser(orig_p)
+    subparser.__init__(prog="localbuildcache", parents=[origp.choices["create"]])
     subparser.add_argument(
         "--local",
         default=False,

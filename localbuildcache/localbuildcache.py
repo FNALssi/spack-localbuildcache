@@ -5,7 +5,9 @@ import os
 import re
 import spack
 import spack.cmd
+import spack.mirror
 import spack.cmd.common.arguments as arguments
+import spack.cmd.buildcache.update_index as update_index
 import spack.environment as ev
 import spack.spec
 import spack.binary_distribution as bindist
@@ -79,14 +81,8 @@ def local_buildcache(args):
     active = env.name
     upstream_setup = find_upstream_setup()
 
-    if args.dest:
-        if args.dest.startswith("/"):
-            url = "file://" + args.dest
-        else:
-            url = args.dest
-    else:
-        url = f"file://{path}/bc"
-    dest = url.replace("file://", "")
+    if not args.mirror:
+        args.mirror = spack.mirror.from_local_path(f"{path}/bc")
 
     skipped = []
     failed = []
@@ -110,7 +106,7 @@ def local_buildcache(args):
         try:
             bindist.push_or_raise(
                 spec,
-                url,
+                args.mirror.get_push_url(),
                 bindist.PushOptions(
                     force=False,
                     unsigned=not args.key,
@@ -133,5 +129,7 @@ def local_buildcache(args):
                 raise
             failed.append((_format_spec(spec), e))
 
-    os.system(f"spack buildcache update-index {url}")
+    update_index(url, update_keys=True)
+
+    dest = self.mirror.fetch_url().replace("file://","") + "/.."
     make_reconstitute_script(dest, active, upstream_setup)
