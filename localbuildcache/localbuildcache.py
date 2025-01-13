@@ -7,11 +7,20 @@ import spack
 import spack.cmd
 import spack.mirror
 import spack.cmd.common.arguments as arguments
-import spack.cmd.buildcache.update_index as update_index
 import spack.environment as ev
 import spack.spec
 import spack.binary_distribution as bindist
-from spack.cmd.buildcache import _format_spec
+
+# not all versions of spack have _format_spec, , etc. 
+try:
+    import spack.cmd.buildcache.update_index as update_index
+    from spack.cmd.buildcache import _format_spec
+except:
+    def _format_spec(spec):
+        return repr(spec)       
+
+    def update_index(url, update_keys=False):
+        os.system(f"spack buildcache update-index {url} {'--keys' if update_keys else ''} ")
 
 
 def get_env_hashes(env, local=True):

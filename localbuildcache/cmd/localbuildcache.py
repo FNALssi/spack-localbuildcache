@@ -1,18 +1,15 @@
 import sys
 import spack.config
 import argparse
+#from spack.cmd.common import arguments
 from spack.extensions import localbuildcache as locext
 from spack.cmd.buildcache import setup_parser as orig_buildcache_setup_parser
 
-description = "create buildcache of local packages in environment"
+description = "create buildcache of packages in environment"
 section = "environments"
 level = "short"
 
-
 def setup_parser(subparser):
-    origp = argparse.ArgumentParser()
-    orig_buildcache_setup_parser(orig_p)
-    subparser.__init__(prog="localbuildcache", parents=[origp.choices["create"]])
     subparser.add_argument(
         "--local",
         default=False,
@@ -30,6 +27,7 @@ def setup_parser(subparser):
         default="",
         help="destination url -- default is file:///environment_dir/bc",
     )
+    #arguments.add_common_arguments(subparser, ["specs", "deptype_default_default_deptype", "jobs"])
 
 
 def localbuildcache(parser, args):
