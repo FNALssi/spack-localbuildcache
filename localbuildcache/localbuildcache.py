@@ -91,17 +91,27 @@ def local_buildcache(args):
     upstream_setup = find_upstream_setup()
 
     if not args.mirror:
-        args.mirror = spack.mirror.from_local_path(f"{path}/bc")
+        args.mirror = spack.mirror.Mirror.from_local_path(f"{path}/bc")
+
+    print(f"making uploader for {args.mirror}")
+    uploader = bindist.Uploader(args.mirror, False, True)
 
     skipped = []
     failed = []
 
+    signing_key = None if not args.signed else (args.key or bindist.select_signing_key())
+
+    # pick specs to upload from environment
+
     for hs in get_env_hashes(env, args.local):
         if not hs:
             continue
+        print(f"hash: {hs}")
+
         specs = spack.cmd.parse_specs([f"/{hs}"], concretize=True)
 
         if not specs:
+            print(f"no specs for hash: {hs}")
             skipped.append(f"/{hs}")
             continue
 
@@ -109,36 +119,24 @@ def local_buildcache(args):
 
         bdf = f"{str(spec.prefix)}/.spack/binary_distribution"
         if args.not_bc and os.path.exists(bdf):
+            print("...was from buildcache, skipping")
             # was installed from a buildcache, skip it
             continue
 
-        try:
-            bindist.push_or_raise(
-                spec,
-                args.mirror.get_push_url(),
-                bindist.PushOptions(
-                    force=False,
-                    unsigned=not args.key,
-                    key=args.key,
-                    regenerate_index=None,
-                ),
-            )
 
-            msg = f"Pushed {_format_spec(spec)} to {url}"
-            tty.info(msg)
 
-        except bindist.NoOverwriteException:
-            skipped.append(_format_spec(spec))
+        with bindist.make_uploader(
+            mirror=args.mirror,
+            force=args.force,
+            update_index=args.update_index,
+            signing_key=signing_key,
+            base_image=args.base_image,
+        ) as uploader:
+            skipped, upload_errors = uploader.push(specs=[spec])
+            failed.extend(upload_errors)
+            if not upload_errors and args.tag:
+                uploader.tag(args.tag, roots)
 
-        # Catch any other exception unless the fail fast option is set
-        except Exception as e:
-            if args.fail_fast or isinstance(
-                e, (bindist.PickKeyException, bindist.NoKeyException)
-            ):
-                raise
-            failed.append((_format_spec(spec), e))
-
-    update_index(url, update_keys=True)
-
-    dest = self.mirror.fetch_url().replace("file://","") + "/.."
+    dest = args.mirror.fetch_url.replace("file://","") + "/.."
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
     make_reconstitute_script(dest, active, upstream_setup)
