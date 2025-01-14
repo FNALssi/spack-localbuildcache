@@ -123,8 +123,6 @@ def local_buildcache(args):
             # was installed from a buildcache, skip it
             continue
 
-
-
         with bindist.make_uploader(
             mirror=args.mirror,
             force=args.force,

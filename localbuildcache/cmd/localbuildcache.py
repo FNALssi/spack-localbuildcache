@@ -1,11 +1,7 @@
 import sys
 import spack.config
 import argparse
-<<<<<<< HEAD
-#from spack.cmd.common import arguments
-=======
 from spack.cmd.common import arguments
->>>>>>> 3f7834e019ad7caa98da28f4dc223eb18a6bac52
 from spack.extensions import localbuildcache as locext
 import spack.cmd.buildcache
 
@@ -93,7 +89,6 @@ def setup_parser(subparser):
         help="destination url -- default is file:///environment_dir/bc",
     )
     #arguments.add_common_arguments(subparser, ["specs", "deptype_default_default_deptype", "jobs"])
-
 
 def localbuildcache(parser, args):
     locext.local_buildcache(args)
