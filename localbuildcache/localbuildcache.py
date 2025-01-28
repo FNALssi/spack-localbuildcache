@@ -10,6 +10,7 @@ import spack.cmd.common.arguments as arguments
 import spack.environment as ev
 import spack.spec
 import spack.binary_distribution as bindist
+import spack.main
 
 # not all versions of spack have _format_spec, , etc. 
 try:
@@ -71,7 +72,8 @@ spack --env {active} install
 
 def find_upstream_setup():
     upstreams = spack.config.get("upstreams")
-    for uname, val in upstreams:
+    for uname in upstreams:
+        val = upstreams[uname]
         if "install_tree" in val:
             res = val["install_tree"]
             if res.endswith("/opt/spack"):
@@ -93,13 +95,11 @@ def local_buildcache(args):
     if not args.mirror:
         args.mirror = spack.mirror.Mirror.from_local_path(f"{path}/bc")
 
-    print(f"making uploader for {args.mirror}")
-    uploader = bindist.Uploader(args.mirror, False, True)
-
     skipped = []
     failed = []
 
-    signing_key = None if not args.signed else (args.key or bindist.select_signing_key())
+    dest = args.mirror.fetch_url.replace("file://","") + "/.."
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
 
     # pick specs to upload from environment
 
@@ -123,18 +123,23 @@ def local_buildcache(args):
             # was installed from a buildcache, skip it
             continue
 
-        with bindist.make_uploader(
-            mirror=args.mirror,
-            force=args.force,
-            update_index=args.update_index,
-            signing_key=signing_key,
-            base_image=args.base_image,
-        ) as uploader:
-            skipped, upload_errors = uploader.push(specs=[spec])
-            failed.extend(upload_errors)
-            if not upload_errors and args.tag:
-                uploader.tag(args.tag, roots)
+        # build spack buildcache command and call main, since
+        # the underlying interface keeps shifting around..
+        argv = [ "buildcache", "push" ]
+        if args.force:
+            argv.append("--force")
+        if args.update_index:
+            argv.append("--update_index")
+        if args.key:
+            argv.append("--key")
+            argv.append(args.key)
+        if args.signed == False and not args.key:
+            argv.append("-u")
+        argv.append("--only")
+        argv.append("package")
+        argv.append(str(args.mirror.get_url("push")))
+        argv.append("/" + hs)
+        print("Running: ", " ".join(argv))
+        spack.main.main(argv)
 
-    dest = args.mirror.fetch_url.replace("file://","") + "/.."
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
     make_reconstitute_script(dest, active, upstream_setup)
