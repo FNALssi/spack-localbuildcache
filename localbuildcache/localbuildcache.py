@@ -5,7 +5,10 @@ import os
 import re
 import spack
 import spack.cmd
-import spack.mirror
+try:
+    import spack.mirror as sm
+except:
+    import spack.mirrors.mirror as sm
 import spack.cmd.common.arguments as arguments
 import spack.environment as ev
 import spack.spec
@@ -93,7 +96,7 @@ def local_buildcache(args):
     upstream_setup = find_upstream_setup()
 
     if not args.mirror:
-        args.mirror = spack.mirror.Mirror.from_local_path(f"{path}/bc")
+        args.mirror = sm.Mirror.from_local_path(f"{path}/bc")
 
     skipped = []
     failed = []
