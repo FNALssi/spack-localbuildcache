@@ -85,6 +85,8 @@ def find_upstream_setup():
                 return res + "/setup-env.sh"
             if os.path.exists(res + "/share/spack/setup-env.sh"):
                 return res + "/share/spack/setup-env.sh"
+    # if upstreams didn't work, use ours
+    return os.environ['SPACK_ROOT'] + "/share/spack/setup-env.sh"
 
 
 def local_buildcache(args):
