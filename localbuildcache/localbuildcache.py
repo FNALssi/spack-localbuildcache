@@ -1,5 +1,8 @@
-import llnl.util.lang as lang
-import llnl.util.tty as tty
+
+try:
+    from spack.llnl.util import lang, tty
+except:
+    from llnl.util import lang, tty
 
 import os
 import re
@@ -91,11 +94,13 @@ def find_upstream_setup():
 
 def local_buildcache(args):
 
+    tty.info("entering local_buildcache")
     spack.cmd.require_active_env("location -e")
     env = ev.active_environment()
     path = env.path
     active = env.name
     upstream_setup = find_upstream_setup()
+    tty.info(f"local_buildcache: path {path} active {active}")
 
     if not args.mirror:
         args.mirror = sm.Mirror.from_local_path(f"{path}/bc")
@@ -106,17 +111,31 @@ def local_buildcache(args):
     dest = args.mirror.fetch_url.replace("file://","") + "/.."
     os.makedirs(os.path.dirname(dest), exist_ok=True)
 
-    # pick specs to upload from environment
+    # build spack buildcache command and call main, since
+    # the underlying interface keeps shifting around..
+    argv = [ "buildcache", "push" ]
+    if args.force:
+        argv.append("--force")
+    if args.update_index:
+        argv.append("--update_index")
+    if args.key:
+        argv.append("--key")
+        argv.append(args.key)
+    if args.signed == False and not args.key:
+        argv.append("-u")
+    argv.append("--only")
+    argv.append("package")
+    argv.append(str(args.mirror.get_url("push")))
 
+    # pick specs to upload from environment
     for hs in get_env_hashes(env, args.local):
         if not hs:
             continue
-        print(f"hash: {hs}")
 
         specs = spack.cmd.parse_specs([f"/{hs}"], concretize=True)
 
         if not specs:
-            print(f"no specs for hash: {hs}")
+            tty.warn(f"no specs for hash: {hs}")
             skipped.append(f"/{hs}")
             continue
 
@@ -124,27 +143,13 @@ def local_buildcache(args):
 
         bdf = f"{str(spec.prefix)}/.spack/binary_distribution"
         if args.not_bc and os.path.exists(bdf):
-            print("...was from buildcache, skipping")
+            tty.warn("...was from buildcache, skipping")
             # was installed from a buildcache, skip it
             continue
 
-        # build spack buildcache command and call main, since
-        # the underlying interface keeps shifting around..
-        argv = [ "buildcache", "push" ]
-        if args.force:
-            argv.append("--force")
-        if args.update_index:
-            argv.append("--update_index")
-        if args.key:
-            argv.append("--key")
-            argv.append(args.key)
-        if args.signed == False and not args.key:
-            argv.append("-u")
-        argv.append("--only")
-        argv.append("package")
-        argv.append(str(args.mirror.get_url("push")))
         argv.append("/" + hs)
-        print("Running: ", " ".join(argv))
-        spack.main.main(argv)
+
+    tty.info("Running: ", " ".join(argv))
+    spack.main.main(argv)
 
     make_reconstitute_script(dest, active, upstream_setup)
