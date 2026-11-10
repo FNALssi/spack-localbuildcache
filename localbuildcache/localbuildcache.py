@@ -82,6 +82,9 @@ def find_upstream_setup():
         val = upstreams[uname]
         if "install_tree" in val:
             res = val["install_tree"]
+            pos = res.find("__spack_path_placeholder__")
+            if pos > 0: 
+                res = res[:pos]
             if res.endswith("/opt/spack"):
                 res = res[:-10]
             if os.path.exists(res + "/setup-env.sh"):
@@ -117,7 +120,7 @@ def local_buildcache(args):
     if args.force:
         argv.append("--force")
     if args.update_index:
-        argv.append("--update_index")
+        argv.append("--update-index")
     if args.key:
         argv.append("--key")
         argv.append(args.key)
@@ -152,4 +155,4 @@ def local_buildcache(args):
     tty.info("Running: ", " ".join(argv))
     spack.main.main(argv)
 
-    make_reconstitute_script(dest, active, upstream_setup)
+    make_reconstitute_script(dest.replace("/..",""), active, upstream_setup)
