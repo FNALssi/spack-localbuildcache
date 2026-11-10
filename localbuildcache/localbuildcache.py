@@ -82,7 +82,7 @@ def find_upstream_setup():
         val = upstreams[uname]
         if "install_tree" in val:
             res = val["install_tree"]
-            pos = res.find("__spack_path_placeholder__")
+            pos = res.find("/__spack_path_placeholder__")
             if pos > 0: 
                 res = res[:pos]
             if res.endswith("/opt/spack"):
